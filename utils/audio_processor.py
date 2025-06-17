@@ -1,3 +1,4 @@
+import torch  # Doit être absolument en première position
 import torchaudio
 import tempfile
 import logging

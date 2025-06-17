@@ -1,7 +1,7 @@
 streamlit>=1.28.0
-torch>=2.0.0
-torchaudio>=2.0.0
-pyannote.audio>=3.1.0
+torch>=2.2.1
+torchaudio>=2.2.1
+pyannote.audio>=3.1.1
 huggingface_hub>=0.16.0
 requests>=2.31.0
 pathlib

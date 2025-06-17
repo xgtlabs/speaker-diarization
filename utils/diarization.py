@@ -32,7 +32,8 @@ def diarize_audio(audio_path: str, hf_token: str, min_speakers: int = 1, max_spe
         try:
             pipeline = Pipeline.from_pretrained(
                 "pyannote/speaker-diarization-3.1",
-                use_auth_token=hf_token
+                use_auth_token=hf_token,
+                cache_dir="./cache"  # Ajout important
             )
         except Exception as e:
             logger.error(f"Erreur de chargement de la pipeline: {e}")

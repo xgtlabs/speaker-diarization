@@ -8,6 +8,8 @@ from utils.summarizer import summarize_with_ollama
 from utils.audio_processor import process_audio_file
 from utils.exceptions import DiarizationError, SummarizationError
 
+os.environ["PYANNOTE_CACHE"] = "./cache"
+
 # Configuration de la page
 st.set_page_config(
     page_title="Diarisation + Résumé", 
