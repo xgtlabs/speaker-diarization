@@ -313,6 +313,11 @@ def process_audio(uploaded_file, hf_token, min_speakers, max_speakers, ollama_mo
                 summary_file = output_dir / f"summary_{uploaded_file.name}.txt"
                 with open(summary_file, "w") as f:
                     f.write(summary)
+
+                # Sauvegarde de la transcription
+                transcription_file = output_dir / f"transcription_{uploaded_file.name}.txt"
+                with open(transcription_file, "w") as f:
+                    f.write(transcript)
                     
                 st.success(f"📁 Résultats sauvegardés dans le dossier {output_dir.absolute()}")
                 
