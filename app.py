@@ -6,6 +6,7 @@ import tempfile
 import os
 import sys
 import logging
+import json
 from pathlib import Path
 from utils.diarization import diarize_audio
 from utils.summarizer import summarize_with_ollama
@@ -282,10 +283,15 @@ def process_audio(uploaded_file, hf_token, min_speakers, max_speakers, ollama_mo
         
         # Étape 4: Génération du résumé
         if st.button("📝 Générer le résumé"):
-            status_text.text("🤖 Génération du résumé...")
-            progress_bar.progress(90)
+            
+            if not segments:
+                st.error("Aucun segment disponible pour générer le résumé")
+                return
             
             try:
+                status_text.text("🤖 Génération du résumé...")
+                progress_bar.progress(90)
+            
                 transcript = format_transcript(segments)
                 summary = summarize_with_ollama(transcript, ollama_model)
                 
@@ -293,6 +299,22 @@ def process_audio(uploaded_file, hf_token, min_speakers, max_speakers, ollama_mo
                 status_text.text("🎉 Analyse terminée!")
                 
                 display_summary(summary)
+                
+                # Sauvegarde des résultats
+                output_dir = Path("./output")
+                output_dir.mkdir(exist_ok=True, parents=True)
+                
+                # Sauvegarde de la diarisation
+                diarization_file = output_dir / f"diarization_{uploaded_file.name}.json"
+                with open(diarization_file, "w") as f:
+                    json.dump(segments, f, indent=2)
+                
+                # Sauvegarde du résumé
+                summary_file = output_dir / f"summary_{uploaded_file.name}.txt"
+                with open(summary_file, "w") as f:
+                    f.write(summary)
+                    
+                st.success(f"📁 Résultats sauvegardés dans le dossier {output_dir.absolute()}")
                 
             except SummarizationError as e:
                 st.error(f"❌ Erreur de résumé: {e}")
