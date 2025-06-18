@@ -25,7 +25,12 @@ if uploaded_file and hf_token:
         transcript += text
         st.text(text)
 
+    ollama_model = st.text_input("🤖 Modèle Ollama pour le résumé", value="llama3")
+
     if st.button("📄 Générer un résumé via Ollama"):
-        summary = summarize_with_ollama(transcript)
+        summary = summarize_with_ollama(transcript, model=ollama_model)
         st.subheader("📝 Résumé de la conversation")
-        st.success(summary)
+        if summary.startswith("Error:"):
+            st.error(summary)
+        else:
+            st.success(summary)

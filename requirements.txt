@@ -1,0 +1,5 @@
+streamlit
+torchaudio
+pyannote.audio
+huggingface_hub
+requests
