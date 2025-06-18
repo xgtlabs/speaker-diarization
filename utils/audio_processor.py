@@ -137,32 +137,102 @@ def get_audio_info(audio_path: str) -> dict:
         logger.error(f"Erreur lors de la lecture des informations audio: {e}")
         return {"error": str(e)}
 
-def validate_audio_format(file_path: str) -> bool:
-    """Valide le format du fichier audio"""
+def validate_audio_format(file_path: str = None, file_name: str = None) -> bool:
+    """
+    Valide le format du fichier audio
+    
+    Args:
+        file_path: Chemin vers le fichier audio existant (optionnel)
+        file_name: Nom du fichier pour validation d'extension (optionnel)
+    
+    Returns:
+        True si le format est valide
+    """
     try:
         supported_formats = ['.wav', '.mp3', '.m4a', '.flac', '.ogg']
-        file_extension = os.path.splitext(file_path)[1].lower()
         
-        if file_extension not in supported_formats:
-            logger.error(f"Format non supporté: {file_extension}")
-            return False
+        # Si on a juste un nom de fichier, on valide l'extension
+        if file_name and not file_path:
+            file_extension = os.path.splitext(file_name)[1].lower()
+            if file_extension not in supported_formats:
+                logger.error(f"Format non supporté: {file_extension}")
+                return False
+            return True
         
-        # Tentative de lecture pour validation
-        info = torchaudio.info(file_path)
+        # Si on a un chemin de fichier, on fait une validation complète
+        if file_path:
+            if not os.path.exists(file_path):
+                logger.error(f"Fichier non trouvé: {file_path}")
+                return False
+                
+            file_extension = os.path.splitext(file_path)[1].lower()
+            
+            if file_extension not in supported_formats:
+                logger.error(f"Format non supporté: {file_extension}")
+                return False
+            
+            # Tentative de lecture pour validation
+            try:
+                info = torchaudio.info(file_path)
+                
+                if info.num_frames <= 0:
+                    logger.error("Fichier audio vide ou corrompu")
+                    return False
+                
+                if info.sample_rate <= 0:
+                    logger.error("Taux d'échantillonnage invalide")
+                    return False
+                
+                return True
+                
+            except Exception as e:
+                logger.error(f"Fichier audio invalide: {e}")
+                return False
         
-        if info.num_frames <= 0:
-            logger.error("Fichier audio vide ou corrompu")
-            return False
-        
-        if info.sample_rate <= 0:
-            logger.error("Taux d'échantillonnage invalide")
-            return False
-        
-        return True
+        return False
         
     except Exception as e:
-        logger.error(f"Fichier audio invalide: {e}")
+        logger.error(f"Erreur lors de la validation: {e}")
         return False
+
+def validate_uploaded_file(uploaded_file) -> tuple[bool, str]:
+    """
+    Valide un fichier uploadé via Streamlit
+    
+    Args:
+        uploaded_file: Objet UploadedFile de Streamlit
+    
+    Returns:
+        Tuple (is_valid, error_message)
+    """
+    try:
+        # Vérification de base
+        if not uploaded_file:
+            return False, "Aucun fichier fourni"
+        
+        if not uploaded_file.name:
+            return False, "Nom de fichier manquant"
+        
+        # Vérification de l'extension
+        supported_formats = ['.wav', '.mp3', '.m4a', '.flac', '.ogg']
+        file_extension = os.path.splitext(uploaded_file.name)[1].lower()
+        
+        if file_extension not in supported_formats:
+            return False, f"Format non supporté: {file_extension}. Formats supportés: {', '.join(supported_formats)}"
+        
+        # Vérification de la taille
+        max_size = 100 * 1024 * 1024  # 100MB
+        if uploaded_file.size > max_size:
+            return False, f"Fichier trop volumineux: {uploaded_file.size / 1024 / 1024:.1f}MB (max: 100MB)"
+        
+        if uploaded_file.size == 0:
+            return False, "Fichier vide"
+        
+        return True, ""
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la validation du fichier uploadé: {e}")
+        return False, f"Erreur de validation: {str(e)}"
 
 def cleanup_audio_file(file_path: str) -> bool:
     """Nettoie un fichier audio temporaire"""

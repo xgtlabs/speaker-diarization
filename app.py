@@ -1,6 +1,6 @@
 import torch
 from utils.diarization import check_model_access
-from utils.audio_processor import validate_audio_format, get_audio_info
+from utils.audio_processor import validate_audio_format, get_audio_info, validate_uploaded_file
 import streamlit as st
 import tempfile
 import os
@@ -10,7 +10,7 @@ from pathlib import Path
 from utils.diarization import diarize_audio
 from utils.summarizer import summarize_with_ollama
 from utils.audio_processor import process_audio_file
-from utils.exceptions import DiarizationError, SummarizationError
+from utils.exceptions import DiarizationError, SummarizationError, AudioProcessingError
 
 os.environ["PYANNOTE_CACHE"] = "./cache"
 
@@ -129,7 +129,6 @@ def display_diagnostic_info():
             except Exception as e:
                 st.error(f"❌ Erreur Ollama: {e}")
 
-# Modifier la fonction main() pour inclure le diagnostic
 def main():
     st.title("🧠 Diarisation + Résumé conversationnel")
     st.markdown("---")
@@ -188,16 +187,17 @@ def main():
     )
     
     if uploaded_file:
-        # Validation du format
-        if not validate_audio_format(uploaded_file.name):
-            st.error("❌ Format de fichier non supporté ou fichier corrompu")
+        # Validation du fichier uploadé
+        is_valid, error_message = validate_uploaded_file(uploaded_file)
+        if not is_valid:
+            st.error(f"❌ {error_message}")
             return
         
         # Informations sur le fichier
         file_details = {
             "Nom": uploaded_file.name,
             "Taille": f"{uploaded_file.size / 1024 / 1024:.2f} MB",
-            "Type": uploaded_file.type
+            "Type": uploaded_file.type or "Inconnu"
         }
         
         st.info("📁 **Informations du fichier:**")
@@ -213,7 +213,6 @@ def main():
         if hf_token:
             st.info("👆 Uploadez un fichier audio pour commencer l'analyse.")
 
-# Modifier la fonction process_audio pour une meilleure gestion d'erreur
 def process_audio(uploaded_file, hf_token, min_speakers, max_speakers, ollama_model):
     """Traite le fichier audio complet avec diagnostic amélioré"""
     progress_bar = st.progress(0)
@@ -231,7 +230,10 @@ def process_audio(uploaded_file, hf_token, min_speakers, max_speakers, ollama_mo
             tmp.write(uploaded_file.read())
             tmp_path = tmp.name
         
-        # Validation du fichier sauvegardé
+        # Validation du fichier sauvegardé avec la validation complète
+        if not validate_audio_format(file_path=tmp_path):
+            raise AudioProcessingError("Fichier audio invalide après sauvegarde")
+        
         audio_info = get_audio_info(tmp_path)
         if "error" in audio_info:
             raise AudioProcessingError(f"Fichier audio invalide: {audio_info['error']}")
